@@ -4,23 +4,29 @@ import { AppState } from "../Interface/Interfaces";
 import updateProperty from "../Scripts/UpdateProperty";
 import DatabaseInput from "../Scripts/DatabaseInput";
 import { useEffect, useRef, useState } from "react";
+import ExportCanvas from "../Scripts/ExportCanvas";
 
 interface Props {
     updateState: React.Dispatch<React.SetStateAction<AppState>>
 }
+/**
+ * The tab that permits to edit a few values (without any other specific category) and to export the canvas
+ * @param updateState the function that permits to update the state of the App.tsx file
+ * @returns the Render tab ReactNode
+ */
 export default function Render({ updateState }: Props) {
     const defaultValues = JSON.parse(localStorage.getItem("Playerify-CanvasPreference") ?? "{}");
     let [dialogShown, showDialog] = useState(false);
+    /**
+     * The ref of the "Canvas export" dialog
+     */
     let dialogRef = useRef<HTMLDivElement>(null);
+    /**
+     * The canvas that'll be used to save as image
+     */
     let canvasExportRef = useRef<HTMLCanvasElement>(null);
     useEffect(() => {
-        if (canvasExportRef.current) {
-            const canvases = (Array.from(document.querySelectorAll("[data-canvasexport]")) as HTMLCanvasElement[]).sort((a, b) => +a.style.zIndex - +b.style.zIndex);
-            const ctx = canvasExportRef.current?.getContext("2d");
-            canvasExportRef.current.width = canvases[0].width;
-            canvasExportRef.current.height = canvases[0].height;
-            if (ctx) for (let canvas of canvases) ctx.drawImage(canvas, 0, 0);
-        }
+        canvasExportRef.current && ExportCanvas(canvasExportRef.current);
     }, [dialogShown])
     return <>
         <h3>Render options:</h3>

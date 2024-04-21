@@ -1,0 +1,16 @@
+{
+  "name": "Playerify",
+  "short_name": "Playerify",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#151515",
+  "theme_color": "#44964c",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./icon.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}

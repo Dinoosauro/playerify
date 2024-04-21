@@ -8,6 +8,9 @@ interface MapVal {
     val: "string" | "number" | "file",
     persist?: boolean
 }
+/**
+ * The map that contains the metadata whose value can be edited
+ */
 const selectMap = new Map<keyof RenderState, MapVal>([
     ["album", { str: "Album name", val: "string" }],
     ["author", { str: "Song author", val: "string" }],
@@ -17,6 +20,10 @@ const selectMap = new Map<keyof RenderState, MapVal>([
     ["maxPlayback", { str: "Song end (in ms)", val: "number" }],
     ["background", { str: "Background image", val: "file", persist: true }]
 ])
+/**
+ * The tab that permits to edit metadata values
+ * @returns the ChangeContent ReactNode
+ */
 export default function ChangeContent() {
     let [state, updateState] = useState<keyof RenderState>("album");
     const mapVal = selectMap.get(state);
@@ -34,13 +41,14 @@ export default function ChangeContent() {
                     window.updateRenderState(prevState => { return { ...prevState, [state]: e.target.value } });
                 }}></input><br></br><br></br>
                 <button onClick={() => {
-                    if (mapVal.persist) {
+                    if (mapVal.persist) { // Save the values in the LocalStorage
+                        // Delete the previous image link, since otherwise this link would be applied (links have priority over database blobs)
                         let links = JSON.parse(localStorage.getItem("Playerify-BackgroundLinks") ?? "{}");
                         delete links[state];
                         localStorage.setItem("Playerify-BackgroundLinks", JSON.stringify(links));
                         localStorage.setItem("Playerify-IconUsed", JSON.stringify({ ...JSON.parse(localStorage.getItem("Playerify-IconUsed") ?? "{}"), [state]: "1" }))
                         DatabaseInput(state);
-                    } else {
+                    } else { // File must not be saved: read the file, and update the state with the blob URL
                         const input = document.createElement("input");
                         input.type = "file";
                         input.accept = "image/*";

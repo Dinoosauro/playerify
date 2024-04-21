@@ -1,5 +1,9 @@
 import updateProperty from "../Scripts/UpdateProperty"
 
+/**
+ * A tab that permits to change the size of the canvas, of the icons and the radius of the album art
+ * @returns the Size tab ReactNode
+ */
 export default function Size() {
     const defaultValues = JSON.parse(localStorage.getItem("Playerify-CanvasPreference") ?? "{}");
     return <>

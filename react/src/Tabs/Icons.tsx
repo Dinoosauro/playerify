@@ -4,9 +4,13 @@ import DatabaseInput from "../Scripts/DatabaseInput";
 import IndexedDatabase from "../Scripts/IndexedDatabase";
 import Card from "../Components/Card";
 
+/**
+ * Edits every icon used from the website
+ * @returns a ReactNode of the Icons tab
+ */
 export default function Icons() {
     const defaultVal = JSON.parse(localStorage.getItem("Playerify-IconUsed") ?? "{}");
-    let [state, updateState] = useState("pause");
+    let [state, updateState] = useState("pause"); // The icon that is being edited
     return <>
         <h3>Manage icons visibility and source:</h3>
         <select className="fullWidth" onChange={(e) => updateState(e.target.value)}>
@@ -14,18 +18,18 @@ export default function Icons() {
         </select><br></br><br></br>
         <Card type={1}>
             <select className="fullWidth" defaultValue={defaultVal[state] ?? "0"} key={`Playerify-IconSelect-${state}`} onChange={(f) => {
-                localStorage.setItem("Playerify-IconUsed", JSON.stringify({ ...JSON.parse(localStorage.getItem("Playerify-IconUsed") ?? "{}"), [state]: f.target.value }));
+                localStorage.setItem("Playerify-IconUsed", JSON.stringify({ ...JSON.parse(localStorage.getItem("Playerify-IconUsed") ?? "{}"), [state]: f.target.value })); // Update the request in LocalStorage, remembering with the property `Playerify-IconUsed` the value of this select (therefore if the icon is custom, the default or nothing)
                 console.log(state);
                 switch (f.target.value) {
-                    case "-1": {
+                    case "-1": { // Add an empty icon as the link
                         window.updateRenderState(prevState => { return { ...prevState, [state]: "./empty.svg" } })
                         break;
                     }
-                    case "0": {
+                    case "0": { // Default icon
                         window.updateRenderState(prevState => { return { ...prevState, [state]: `./${state}.svg` } });
                         break;
                     }
-                    case "1": {
+                    case "1": { // Get a new icon from the user's device, and update the state
                         DatabaseInput(state);
                         break;
                     }

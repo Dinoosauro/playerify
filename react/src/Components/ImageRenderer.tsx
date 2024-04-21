@@ -24,9 +24,13 @@ interface RoundedRectProps {
 }
 declare global {
     interface Window {
-        updateRenderState: React.Dispatch<React.SetStateAction<RenderState>>
+        updateRenderState: React.Dispatch<React.SetStateAction<RenderState>>,
+        updateHeaderState: React.Dispatch<React.SetStateAction<number>>
     }
 }
+/**
+ * The object that contains all the necessary information for handling button clicks
+ */
 let interactiveValues = {
     pause: {
         from: [0, 0],
@@ -45,23 +49,40 @@ let interactiveValues = {
         length: 0
     }
 }
+interface btnObject {
+    from: number[],
+    length: number
+}
+/**
+ * The object that contains all the information required for handling clicks on the progress bar
+ */
 let interactiveProgress = {
     from: [0, 0],
     length: 0,
     size: 0
 }
+/**
+ * The array that'll contain all the contexts that are being currently modified, so that multiple operations (and therefore glitches) can be avoided
+ */
+let canvasDrawing: CanvasRenderingContext2D[] = [];
+/**
+ * Following, there are a few State properties that are made as global. 
+ * This is due the fact that Timeout/Interval functions cannot access the State, and therefore this is the easiest way to permit these scripts to fetch updated values
+ */
 let playbackTime = 0;
 let maxPlayback = 9999;
 let heightProgress = -9999;
 let isPlaying = true;
-let textColor = JSON.parse(localStorage.getItem("Playerify-CanvasPreference") ?? "{}") ?? "#fafafa";
-let canvasDrawing: CanvasRenderingContext2D[] = [];
+let textColor = JSON.parse(localStorage.getItem("Playerify-CanvasPreference") ?? "{}").color ?? "#fafafa";
 let widthHeight = [0, 0];
-let font = `"SF Pro", sans-serif`;
+let font = JSON.parse(localStorage.getItem("Playerify-CanvasPreference") ?? "{}").font ?? `"SF Pro", sans-serif`;
+/**
+ * A boolean that indicates if data from Spotify (or the user) has been provided to the State, so that intervals can be started
+ */
 let dataProvided = false;
 interface Props {
     refresh: () => void,
-    event: (type: string) => Promise<void>
+    event: (type: string, rect?: number[]) => Promise<void>
 }
 export default function ImageRenderer({ refresh, event }: Props) {
     const defaultValues = JSON.parse(localStorage.getItem("Playerify-CanvasPreference") ?? "{}");
@@ -105,7 +126,7 @@ export default function ImageRenderer({ refresh, event }: Props) {
     widthHeight = [state.width, state.height];
     font = state.font;
     dataProvided = state.dataProvided;
-    useEffect(() => {
+    useEffect(() => { // Add a Window element to go back to previous width/height when the user exits from Fullscreen mode
         window.addEventListener("fullscreenchange", () => {
             if (!document.fullscreenElement) {
                 if (fullscreenDiv.current) {
@@ -118,18 +139,24 @@ export default function ImageRenderer({ refresh, event }: Props) {
             }
         })
     }, [])
+    /**
+     * The function that handles the update of time-sensitive text elements
+     * @param dontUpdate don't add 1 second to the current time
+     */
     function writeUpdateElements(dontUpdate?: boolean) {
         const textCtx = textCanvas.current?.getContext("2d");
-        if (isPlaying && !dontUpdate) playbackTime += 1000;
-        if (heightProgress === -9999) return;
-        if (dataProvided && textCtx && canvasDrawing.indexOf(textCtx) === -1) {
+        if (isPlaying && !dontUpdate) playbackTime += 1000; // One second has passed
+        if (heightProgress === -9999) return; // No calculated height from the Album Art canvas has been provided. Don't do anything.
+        if (dataProvided && textCtx && canvasDrawing.indexOf(textCtx) === -1) { // If data has been provided, and there aren't any current actions being done on this canvas, start drawing on it
             textCtx.clearRect(0, 0, widthHeight[0], widthHeight[1]);
             canvasDrawing.push(textCtx);
+            // Minute/Hour
             textCtx.font = `bold ${widthHeight[0] * 30 / 100}px ${font}`;
             textCtx.fillStyle = textColor;
             const currentDate = [new Date().getHours(), new Date().getMinutes()];
             const finalText = `${currentDate[0] < 10 ? "0" : ""}${currentDate[0]}:${currentDate[1] < 10 ? "0" : ""}${currentDate[1]}`;
             writeText({ ctx: textCtx, text: finalText, height: (widthHeight[1] * 13 / 100) });
+            // Date string
             const monthString = new Date().toLocaleDateString(navigator.languages[0], {
                 weekday: "long",
                 day: "numeric",
@@ -137,55 +164,82 @@ export default function ImageRenderer({ refresh, event }: Props) {
             });
             textCtx.font = `${widthHeight[0] * 8 / 100}px ${font}`;
             writeText({ ctx: textCtx, text: monthString, height: (widthHeight[1] * 5 / 100) });
+            // The current time of the song
             let startDate = new Date(playbackTime).toLocaleTimeString().substring(3).trim();
             if (startDate.startsWith("0")) startDate = startDate.substring(1);
             textCtx.font = `${widthHeight[0] * 3 / 100}px ${font}`;
             textCtx.fillStyle = textColor;
             writeText({ ctx: textCtx, text: startDate, height: heightProgress, width: 25 + (((widthHeight[0] * 20 / 100) - textCtx.measureText(startDate).width) / 2) });
+            // The end time of the song
             let endDate = new Date(maxPlayback - playbackTime).toLocaleTimeString().substring(3).trim();
             if (endDate.startsWith("0")) endDate = endDate.substring(1);
             endDate = `-${endDate}`;
             writeText({ ctx: textCtx, text: endDate, height: heightProgress, width: (widthHeight[0] * 80 / 100) + ((textCtx.measureText(startDate).width) / 2) });
-            interactiveProgress = {
+            interactiveProgress = { // Update the position of the progress bar
                 from: [widthHeight[0] * 20 / 100, heightProgress],
                 length: widthHeight[0] * 60 / 100,
                 size: 80
             }
+            // Draw the progress bar
             textCtx.drawImage(roundedRectangle({ fill: "rgba(0,0,0,0.45)", val: [widthHeight[0] * 20 / 100, heightProgress, widthHeight[0] * 60 / 100, Math.max(widthHeight[1] * 1 / 100, 15), 80] }), 0, 0);
             textCtx.drawImage(roundedRectangle({ fill: `${textColor}d9`, val: [widthHeight[0] * 20 / 100, heightProgress, Math.min((playbackTime * (widthHeight[0] * 60 / 100) / maxPlayback), widthHeight[0] * 60 / 100), Math.max(widthHeight[1] * 1 / 100, 15), 80] }), 0, 0);
             canvasDrawing.splice(canvasDrawing.indexOf(textCtx), 1);
         }
-        playbackTime > maxPlayback && refresh();
+        playbackTime > maxPlayback && refresh(); // Ask to refresh data from Spotify API if the time played is greater than the track's length, since this means that the track _should_ be ended
     }
     useEffect(() => {
-        window.updateRenderState = updateState;
+        window.updateRenderState = updateState; // Make it a global value so that it can be accesed also from other classes
         let storage = JSON.parse(localStorage.getItem("Playerify-IconUsed") ?? "{}");
         let imageLinks = JSON.parse(localStorage.getItem("Playerify-BackgroundLinks") ?? "{}");
         let updateObj: any = {};
         (async () => {
             for (let key in storage) {
                 switch (storage[key]) {
-                    case "-1": {
+                    case "-1": { // They must not be shown
                         updateObj[key] = "./empty.svg";
                         break;
                     }
-                    case "1": {
+                    case "1": { // Get value from IndexedDB
                         let blob = await IndexedDatabase.get({ db: await IndexedDatabase.db(), query: key });
                         if (blob) updateObj[key] = URL.createObjectURL(blob.blob);
                         break;
                     }
                 }
             }
-            for (let key in imageLinks) updateObj[key] = imageLinks[key];
+            for (let key in imageLinks) updateObj[key] = imageLinks[key]; // Apply also the URLs of the provided values
             updateState(prevState => { return { ...prevState, ...updateObj } });
         })();
-        setInterval(() => { writeUpdateElements() }, 1000);
+        setInterval(() => { writeUpdateElements() }, 1000); // Update the time-sensitive values every second
     }, []);
+    /**
+     * The canvas that handles the Album Art, and other metadata of the song
+     */
     let canvas = useRef<HTMLCanvasElement>(null);
+    /**
+     * The canvas where time-sensitive text (and also the progress bar) is written
+     */
     let textCanvas = useRef<HTMLCanvasElement>(null);
+    /**
+     * The canvas where the background image is painted
+     */
     let backgroundCanvas = useRef<HTMLCanvasElement>(null);
+    /**
+     * The canvas that contains the clickable buttons
+     */
     let buttonCanvas = useRef<HTMLCanvasElement>(null);
+    /**
+     * The container div of every canvas, used for fullscreen mode
+     */
     let fullscreenDiv = useRef<HTMLDivElement>(null);
+    /**
+     * Draw an image in a proxy canvas, also applying filters
+     * @param filter the filter to apply to the output canvas
+     * @param image the image to draw in the canvas
+     * @param drawProps position of where the image should be drawn
+     * @param square if true, a 1000*1000 square will be created, instead of using width/height from the state
+     * @param roundedCorners if rounded corners must be applied. The radius must be passed as the fifth value of the drawProps array
+     * @returns A promise, with the painted canvas with the image as the result
+     */
     function proxyCanvas({ filter = "", image, drawProps, square, roundedCorners }: ProxyProps) {
         return new Promise<HTMLCanvasElement>(async (resolve, reject) => {
             const canvas = document.createElement("canvas");
@@ -196,20 +250,20 @@ export default function ImageRenderer({ refresh, event }: Props) {
             const img = new Image();
             img.onload = () => {
                 ctx.filter = filter;
-                if (roundedCorners) {
+                if (roundedCorners) { // Create a transparent rounded rectangle, that'll be clipped so that the image can be drawn there.
                     ctx.fillStyle = "#ffffff00";
                     // @ts-ignore
                     ctx.roundRect(...drawProps);
                     ctx.fill();
                     ctx.clip();
-                    drawProps.pop();
+                    drawProps.pop(); // Delete the last element so that multiple rounded corners aren't painted
                 }
                 // @ts-ignore
                 ctx.drawImage(img, ...(drawProps));
                 resolve(canvas);
             }
             img.onerror = (ex) => reject(ex);
-            if (localStorage.getItem("Playerify-SVGIconBackground") !== "b" && (await fetch(image)).headers.get("content-type") === "image/svg+xml") {
+            if (localStorage.getItem("Playerify-SVGIconBackground") !== "b" && (await fetch(image)).headers.get("content-type")?.toLowerCase() === "image/svg+xml") { // If the provided image is a SVG, and the user hasn't disabled the "Fill replacer" option, replace the fill values with the current color
                 const img = await fetch(image);
                 const text = await img.text();
                 let split = text.replace(/'/g, `"`).split(`fill="`);
@@ -219,6 +273,16 @@ export default function ImageRenderer({ refresh, event }: Props) {
             img.src = image;
         })
     }
+    /**
+     * Write a text to the Canvas, by cropping it if necessary
+     * @param ctx the context used for writing text
+     * @param text the text to write
+     * @param height the Y position where the text will be written
+     * @param autoWidth the maximum width of the text. Text will be cropped if its width is greater than this value
+     * @param width the X position where the text will be written
+     * @param actualWrite if true, the text won't be written, but only the measures will be returned
+     * @returns The measure of the written text
+     */
     function writeText({ ctx, text, height, autoWidth = Infinity, width, actualWrite }: WriteProps) {
         while (ctx.measureText(text).width > autoWidth) text = text.substring(0, text.length - 1);
         const measure = ctx.measureText(text);
@@ -226,6 +290,12 @@ export default function ImageRenderer({ refresh, event }: Props) {
         ctx.fillText(text, width ?? ((widthHeight[0] - measure.width) / 2), measure.actualBoundingBoxAscent + height);
         return measure;
     }
+    /**
+     * Draw a rounded rectangle in a proxy canvas
+     * @param fill the style used for filling the rectangle
+     * @param val the position of the rectangle
+     * @returns a Canvas with the rounded rectangle drawn
+     */
     function roundedRectangle({ fill, val }: RoundedRectProps) {
         const canvas = document.createElement("canvas");
         canvas.width = widthHeight[0];
@@ -237,7 +307,7 @@ export default function ImageRenderer({ refresh, event }: Props) {
         ctx.fill();
         return canvas;
     }
-    useEffect(() => {
+    useEffect(() => { // Draw the background image
         (async () => {
             if (!state.dataProvided) return;
             const ctx = backgroundCanvas.current?.getContext("2d");
@@ -248,8 +318,11 @@ export default function ImageRenderer({ refresh, event }: Props) {
             canvasDrawing.splice(canvasDrawing.indexOf(ctx), 1);
         })()
     }, [state.background, state.width, state.height, state.forceReRender, state.dataProvided])
+    /**
+     * Draw the button icons to their dedicated canvas
+     */
     async function drawIcons() {
-        if (!state.dataProvided) return;
+        if (!dataProvided) return;
         const ctx = buttonCanvas.current?.getContext("2d");
         if (!ctx || canvasDrawing.indexOf(ctx) !== -1) return;
         canvasDrawing.push(ctx);
@@ -262,31 +335,36 @@ export default function ImageRenderer({ refresh, event }: Props) {
             canvasDrawing.splice(canvasDrawing.indexOf(ctx), 1);
         }, 200)
     }
-    useEffect(() => {
+    useEffect(() => { // Draw the album art and metadata of the song
         (async () => {
             if (!state.dataProvided) return;
             const ctx = canvas.current?.getContext("2d");
             if (!ctx || canvasDrawing.indexOf(ctx) !== -1) return;
             canvasDrawing.push(ctx);
             ctx.clearRect(0, 0, state.width, state.height);
+            // Get the current date, and emulate writing it in the canvas
             ctx.font = `bold ${state.width * 30 / 100}px ${state.font}`;
             ctx.fillStyle = state.color;
             let albumSize = (state.width > state.height ? state.height : state.width) * 90 / 100;
             const currentDate = [new Date().getHours(), new Date().getMinutes()];
             const finalText = `${currentDate[0] < 10 ? "0" : ""}${currentDate[0]}:${currentDate[1] < 10 ? "0" : ""}${currentDate[1]}`;
-            const textSize = writeText({ ctx: ctx, text: finalText, height: (state.height * 13 / 100), actualWrite: true });
-            while (((state.height * 15 / 100) + textSize.emHeightAscent + albumSize + 575) > state.height) albumSize--;
-            ctx.drawImage(await proxyCanvas({ image: state.img, drawProps: [(state.width - albumSize) / 2, (state.height * 15 / 100) + textSize.emHeightAscent, albumSize, albumSize, state.imgRadius], roundedCorners: true }), 0, 0);
+            const textSize = writeText({ ctx: ctx, text: finalText, height: (state.height * 13 / 100), actualWrite: true }); // actualWrite is set to true: the date won't be written, but the TextMetrics will be returned in any case, permitting to calc the next proportions
+            while (((state.height * 15 / 100) + textSize.actualBoundingBoxAscent + albumSize + 575) > state.height) albumSize--; // Make sure there's enough room for every command in the bubble
+            ctx.drawImage(await proxyCanvas({ image: state.img, drawProps: [(state.width - albumSize) / 2, (state.height * 15 / 100) + textSize.actualBoundingBoxAscent, albumSize, albumSize, state.imgRadius], roundedCorners: true }), 0, 0); // Draw album image
+            // Draw the rounded rectangle for the controls
             ctx.beginPath();
-            const squareStart = (state.height * 17 / 100) + textSize.emHeightAscent + albumSize + 55;
+            const squareStart = (state.height * 17 / 100) + textSize.actualBoundingBoxAscent + albumSize + 55;
             ctx.drawImage(roundedRectangle({ fill: `${state.metadataColor}59`, val: [state.width * 2.5 / 100, squareStart, state.width * 95 / 100, state.height * 20 / 100, 80] }), 0, 0);
+            // Write the album name
             ctx.fillStyle = state.color;
             ctx.font = `bold ${state.width * 5 / 100}px ${state.font}`;
             writeText({ ctx: ctx, text: state.title, height: squareStart + 75, autoWidth: state.width * 85 / 100 });
+            // And now write the author and album name
             ctx.font = `${state.width * 4 / 100}px ${state.font}`;
             const heightAuthorStart = (state.width * 5 / 100) + squareStart + 105;
             const heightAuthor = writeText({ ctx: ctx, text: `${state.author}  —  ${state.album}`, height: heightAuthorStart, autoWidth: state.width * 85 / 100 });
             heightProgress = heightAuthorStart + (state.height * 2 / 100) + heightAuthor.actualBoundingBoxAscent;
+            // Update all the values for the icons
             interactiveValues.pause = {
                 from: [((state.width / 2) - ((state.width * state.iconSize / 100) / 2)), heightProgress + (state.height * 3.2 / 100)],
                 length: state.width * state.iconSize / 100
@@ -303,7 +381,7 @@ export default function ImageRenderer({ refresh, event }: Props) {
                 from: [(state.width * 90 / 100) - (state.width * state.iconSize / 100), heightProgress + (state.height * 3.2 / 100)],
                 length: (state.width * state.iconSize / 100)
             }
-            writeUpdateElements(true);
+            writeUpdateElements(true); // Update the icon position, without adding the second
             canvasDrawing.splice(canvasDrawing.indexOf(ctx), 1);
             drawIcons();
         })()
@@ -317,15 +395,15 @@ export default function ImageRenderer({ refresh, event }: Props) {
             <canvas data-canvasexport className="fixedCanvas" onClick={async (e) => {
                 const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
                 const coordinates = [(e.clientX - rect.left) * state.width / rect.width, (e.clientY - rect.top) * state.height / rect.height];
-                if (interactiveProgress.from[0] < coordinates[0] && (interactiveProgress.from[0] + interactiveProgress.length) > coordinates[0] && interactiveProgress.from[1] < coordinates[1] && (interactiveProgress.from[1] + interactiveProgress.size) > coordinates[1]) {
+                if (interactiveProgress.from[0] < coordinates[0] && (interactiveProgress.from[0] + interactiveProgress.length) > coordinates[0] && interactiveProgress.from[1] < coordinates[1] && (interactiveProgress.from[1] + interactiveProgress.size) > coordinates[1]) { // Clicked on the progress bar
                     const process = (coordinates[0] - interactiveProgress.from[0]) / (interactiveProgress.length);
                     await event(`seek?position_ms=${Math.floor(state.maxPlayback * process)}`);
                     return;
                 }
                 for (let button in interactiveValues) {
-                    if (interactiveValues[button as "pause"].from[0] < coordinates[0] && (interactiveValues[button as "pause"].from[0] + interactiveValues[button as "pause"].length) > coordinates[0] && interactiveValues[button as "pause"].from[1] < coordinates[1] && (interactiveValues[button as "pause"].from[1] + interactiveValues[button as "pause"].length) > coordinates[1]) {
-                        await event(button === "pause" && !state.isPlaying ? "play" : button);
-                        button === "pause" && updateState(prevState => { return { ...prevState, isPlaying: !prevState.isPlaying, currentPlayback: playbackTime } });
+                    if (interactiveValues[button as "pause"].from[0] < coordinates[0] && (interactiveValues[button as "pause"].from[0] + interactiveValues[button as "pause"].length) > coordinates[0] && interactiveValues[button as "pause"].from[1] < coordinates[1] && (interactiveValues[button as "pause"].from[1] + interactiveValues[button as "pause"].length) > coordinates[1]) { // That button has been clicked
+                        await event(button === "pause" && !state.isPlaying ? "play" : button, [e.clientX, e.clientY]); // Send the request to Spotify
+                        button === "pause" && updateState(prevState => { return { ...prevState, isPlaying: !prevState.isPlaying, currentPlayback: playbackTime } }); // Update the isPlaying property if the pause button has been clicked
                         break;
                     }
                 }
@@ -334,12 +412,13 @@ export default function ImageRenderer({ refresh, event }: Props) {
         <br></br>
         <button className="fullWidth" onClick={() => {
             if (fullscreenDiv.current) {
+                navigator.vibrate && navigator.vibrate(300);
                 fullscreenDiv.current.requestFullscreen();
                 setTimeout(() => {
                     const rect = GetFullSize();
-                    updateState(prevState => { return { ...prevState, width: rect.width * (window.devicePixelRatio ?? 1), height: (rect.height * (window.devicePixelRatio ?? 1)) } })
+                    updateState(prevState => { return { ...prevState, width: rect.width * (window.devicePixelRatio ?? 1), height: (rect.height * (window.devicePixelRatio ?? 1)) } }) // Render the canvas with the screen width/height
                     if (!fullscreenDiv.current) return;
-                    for (let item of fullscreenDiv.current.querySelectorAll("canvas")) {
+                    for (let item of fullscreenDiv.current.querySelectorAll("canvas")) { // Add the maxWidth/maxHeight style property so that the image quality is great also on high-density screen
                         item.style.maxWidth = `${rect.width}px`;
                         item.style.maxHeight = `${rect.height}px`;
                     }

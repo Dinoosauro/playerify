@@ -31,9 +31,9 @@ body {
   padding: 10px;
 }
 
-.dialog {
+.dialog,
+.simpleBackdrop {
   position: fixed;
-  top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
@@ -42,6 +42,20 @@ body {
   z-index: 10;
   transition: opacity 0.2s ease-in-out;
   animation: opacity 0.2s;
+}
+
+.dialog {
+  top: 0;
+}
+
+.simpleBackdrop {
+  height: auto;
+  max-height: 50vh;
+  overflow: auto;
+  -webkit-backdrop-filter: blur(16px) brightness(30%);
+  backdrop-filter: blur(16px) brightness(30%);
+  padding: 10px;
+  border-radius: 12px;
 }
 
 .dialog>div {
@@ -99,6 +113,10 @@ button:active {
   height: 3px;
   z-index: 1;
   transition: 0.15s ease-in-out
+}
+
+.sectionAdapt {
+  overflow: auto;
 }
 
 input,
@@ -165,6 +183,14 @@ a {
   margin-right: 10px;
 }
 
+.introductionAdapt>span>img {
+  max-width: 50vw;
+}
+
+.introductionAdapt>:nth-child(2) {
+  float: right;
+}
+
 @media (max-width: 700px) {
   .mainComponentDiv {
     display: block !important;
@@ -173,5 +199,13 @@ a {
   .mainComponentDiv>div:first-child {
     margin-right: 0px;
     margin-bottom: 10px;
+  }
+
+  .introductionAdapt:first-child {
+    margin-bottom: 10px;
+  }
+
+  .introductionAdapt>span>img {
+    max-width: 100%;
   }
 }

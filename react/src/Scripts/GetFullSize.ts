@@ -1,3 +1,7 @@
+/**
+ * Gets the current webpage width and height
+ * @returns A DOMRect of the current window screen/height
+ */
 export default function GetFullSize() {
     const div = document.createElement("div");
     div.style.width = "100vw";

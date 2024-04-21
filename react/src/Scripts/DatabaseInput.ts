@@ -1,5 +1,9 @@
 import IndexedDatabase from "./IndexedDatabase";
 
+/**
+ * Add an image to the database
+ * @param id the key that'll be edited in the database entry
+ */
 export default function DatabaseInput(id: string) {
     const input = document.createElement("input");
     input.type = "file";

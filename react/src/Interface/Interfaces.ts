@@ -28,7 +28,7 @@ export interface RenderState {
     tv: string,
     devicePlaybackType: string,
     forceReRender: number,
-    dataProvided: boolean
+    dataProvided: boolean,
 }
 export interface AppState {
     token: null | string,

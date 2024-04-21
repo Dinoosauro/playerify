@@ -10,6 +10,11 @@ import WebsiteSettings from "./WebsiteSettings";
 interface Props {
     mainState: React.Dispatch<React.SetStateAction<AppState>>
 }
+/**
+ * The container of each Tab
+ * @param mainState the function that is called to update the state of the App.tsx file
+ * @returns a ReactNode of the container of every canvas editor tab
+ */
 export default function GeneralTab({ mainState }: Props) {
     let [state, updateState] = useState("");
     return <><h2>Options:</h2>
