@@ -69,7 +69,6 @@ export default function App() {
         }
         if (!request.status.toString().startsWith("2")) throw new Error("Failed Spotify request");
         const json = await request.json();
-        lastRequestDate -= 5000;
         window.updateRenderState(prevState => { return { ...prevState, album: (json.item.album ?? json.item.show).name, author: json.item.artists !== undefined ? json.item.artists[0].name : json.item.show.publisher, title: json.item.name, maxPlayback: json.item.duration_ms, currentPlayback: json.progress_ms, img: json.item?.is_local ? "./samplesong.svg" : (json.item.album ?? json.item).images[0].url, devicePlaybackType: json.device.type.toLowerCase(), isPlaying: json.is_playing, forceReRender: state.forceReRender ? Date.now() : prevState.forceReRender, dataProvided: true } }) // Update the drawing state with the new values
         state.forceReRender = false;
         if (spotiLinkRef.current) spotiLinkRef.current.href = json.item.external_urls.spotify; // Update the resource link
@@ -156,6 +155,7 @@ export default function App() {
               }
               if (type !== "device") { // Simple request
                 navigator.vibrate && navigator.vibrate(300);
+                lastRequestDate -= 5000; // By reducing the requested date by 5000, the effect will always get the currently-playing track. In this way, if the user quickly skips more tracks, each track will be fetched.
                 await spotifyRequest(`https://api.spotify.com/v1/me/player/${type === "prev" ? "previous" : type}`, type === "pause" || type === "play" || type.startsWith("seek") ? "PUT" : "POST");
                 updateState(prevState => { return { ...prevState, refreshPlayback: Date.now() } });
               } else { // Make a request to Spotify API for the currently available devices
