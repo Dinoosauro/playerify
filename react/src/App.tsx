@@ -69,8 +69,8 @@ export default function App() {
         }
         if (!request.status.toString().startsWith("2")) throw new Error("Failed Spotify request");
         const json = await request.json();
-
-        window.updateRenderState(prevState => { return { ...prevState, album: (json.item.album ?? json.item.show).name, author: json.item.artists !== undefined ? json.item.artists[0].name : json.item.show.publisher, title: json.item.name, maxPlayback: json.item.duration_ms, currentPlayback: json.progress_ms, img: (json.item.album ?? (json.item?.isLocal ? { images: [{ url: "./samplesong.svg" }] } : json.item)).images[0].url, devicePlaybackType: json.device.type.toLowerCase(), isPlaying: json.is_playing, forceReRender: state.forceReRender ? Date.now() : prevState.forceReRender, dataProvided: true } }) // Update the drawing state with the new values
+        lastRequestDate -= 5000;
+        window.updateRenderState(prevState => { return { ...prevState, album: (json.item.album ?? json.item.show).name, author: json.item.artists !== undefined ? json.item.artists[0].name : json.item.show.publisher, title: json.item.name, maxPlayback: json.item.duration_ms, currentPlayback: json.progress_ms, img: json.item?.is_local ? "./samplesong.svg" : (json.item.album ?? json.item).images[0].url, devicePlaybackType: json.device.type.toLowerCase(), isPlaying: json.is_playing, forceReRender: state.forceReRender ? Date.now() : prevState.forceReRender, dataProvided: true } }) // Update the drawing state with the new values
         state.forceReRender = false;
         if (spotiLinkRef.current) spotiLinkRef.current.href = json.item.external_urls.spotify; // Update the resource link
       }
