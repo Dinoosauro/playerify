@@ -17,6 +17,7 @@ const filestoCache = [
     './spotify.png',
     './tablet.svg',
     './icon.svg',
+    './samplesong.svg',
     './icon.png',
     './tv.svg',
     './manifest.json',

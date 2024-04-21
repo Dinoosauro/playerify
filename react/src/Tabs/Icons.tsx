@@ -19,7 +19,6 @@ export default function Icons() {
         <Card type={1}>
             <select className="fullWidth" defaultValue={defaultVal[state] ?? "0"} key={`Playerify-IconSelect-${state}`} onChange={(f) => {
                 localStorage.setItem("Playerify-IconUsed", JSON.stringify({ ...JSON.parse(localStorage.getItem("Playerify-IconUsed") ?? "{}"), [state]: f.target.value })); // Update the request in LocalStorage, remembering with the property `Playerify-IconUsed` the value of this select (therefore if the icon is custom, the default or nothing)
-                console.log(state);
                 switch (f.target.value) {
                     case "-1": { // Add an empty icon as the link
                         window.updateRenderState(prevState => { return { ...prevState, [state]: "./empty.svg" } })

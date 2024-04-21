@@ -2,7 +2,7 @@ import { ReactNode } from "react"
 
 interface Props {
     children: ReactNode,
-    close: () => void
+    close?: () => void
 }
 /**
  * Creates a full-screen dialog
@@ -14,8 +14,8 @@ export default function Dialog({ children, close }: Props) {
     return <div className="dialog" role="dialog">
         <div>
             <div>
-                {children}<br></br><br></br>
-                <button onClick={close} style={{ width: "100%" }}>Close dialog</button>
+                {children}
+                {close && <><br></br><br></br><button onClick={close} style={{ width: "100%" }}>Close dialog</button></>}
             </div>
         </div>
     </div>

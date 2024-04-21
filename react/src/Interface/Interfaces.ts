@@ -29,6 +29,7 @@ export interface RenderState {
     devicePlaybackType: string,
     forceReRender: number,
     dataProvided: boolean,
+    tokenUpdate: number
 }
 export interface AppState {
     token: null | string,

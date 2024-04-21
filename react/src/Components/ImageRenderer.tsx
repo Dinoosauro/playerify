@@ -61,6 +61,7 @@ let interactiveProgress = {
     length: 0,
     size: 0
 }
+let interval: number | undefined;
 /**
  * The array that'll contain all the contexts that are being currently modified, so that multiple operations (and therefore glitches) can be avoided
  */
@@ -88,7 +89,7 @@ export default function ImageRenderer({ refresh, event }: Props) {
     const defaultValues = JSON.parse(localStorage.getItem("Playerify-CanvasPreference") ?? "{}");
     // I know, there are A LOT of values in this State. However, is essential to re-render the component for each of these changes.
     let [state, updateState] = useState<RenderState>({
-        img: "./empty.svg",
+        img: "./samplesong.svg",
         background: "./background.jpg",
         title: "",
         author: "",
@@ -117,7 +118,8 @@ export default function ImageRenderer({ refresh, event }: Props) {
         tv: "./tv.svg",
         devicePlaybackType: "unknown",
         forceReRender: Date.now(),
-        dataProvided: false
+        dataProvided: false,
+        tokenUpdate: 0
     });
     playbackTime = state.currentPlayback;
     maxPlayback = state.maxPlayback;
@@ -209,8 +211,11 @@ export default function ImageRenderer({ refresh, event }: Props) {
             for (let key in imageLinks) updateObj[key] = imageLinks[key]; // Apply also the URLs of the provided values
             updateState(prevState => { return { ...prevState, ...updateObj } });
         })();
-        setInterval(() => { writeUpdateElements() }, 1000); // Update the time-sensitive values every second
     }, []);
+    useEffect(() => { // Run this every time a token is updated
+        interval && clearInterval(interval)
+        interval = setInterval(() => { writeUpdateElements() }, 1000); // Update the time-sensitive values every second
+    }, [state.tokenUpdate])
     /**
      * The canvas that handles the Album Art, and other metadata of the song
      */

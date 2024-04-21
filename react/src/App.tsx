@@ -36,7 +36,10 @@ export default function App() {
     window.addEventListener("message", (msg) => { // Prepare getting the token
       if (msg.origin !== window.location.origin) return;
       const json = JSON.parse(msg.data);
-      json.token && updateState(prevState => { return { ...prevState, token: json.token, next: true } });
+      if (json.token) {
+        updateState(prevState => { return { ...prevState, token: json.token, next: true } });
+        window.updateRenderState && window.updateRenderState(prevState => { return { ...prevState, tokenUpdate: prevState.tokenUpdate + 1 } })
+      }
     });
     window.addEventListener("focus", () => { // Since browsers usually make the tab sleep when the user changes it, refresh the data when it gains again focus
       updateState(prevState => { return { ...prevState, refreshPlayback: Date.now() } })
@@ -60,9 +63,14 @@ export default function App() {
             Authorization: `Bearer ${state.token}`
           }
         });
+        if (request.status === 401) {
+          getSpotiToken();
+          return;
+        }
+        if (!request.status.toString().startsWith("2")) throw new Error("Failed Spotify request");
         const json = await request.json();
 
-        window.updateRenderState(prevState => { return { ...prevState, album: (json.item.album ?? json.item.show).name, author: json.item.artists !== undefined ? json.item.artists[0].name : json.item.show.publisher, title: json.item.name, maxPlayback: json.item.duration_ms, currentPlayback: json.progress_ms, img: (json.item.album ?? json.item).images[0].url, devicePlaybackType: json.device.type.toLowerCase(), isPlaying: json.is_playing, forceReRender: state.forceReRender ? Date.now() : prevState.forceReRender, dataProvided: true } }) // Update the drawing state with the new values
+        window.updateRenderState(prevState => { return { ...prevState, album: (json.item.album ?? json.item.show).name, author: json.item.artists !== undefined ? json.item.artists[0].name : json.item.show.publisher, title: json.item.name, maxPlayback: json.item.duration_ms, currentPlayback: json.progress_ms, img: (json.item.album ?? json.item?.isLocal ? { images: [{ url: "./samplesong.svg" }] } : json.item).images[0].url, devicePlaybackType: json.device.type.toLowerCase(), isPlaying: json.is_playing, forceReRender: state.forceReRender ? Date.now() : prevState.forceReRender, dataProvided: true } }) // Update the drawing state with the new values
         state.forceReRender = false;
         if (spotiLinkRef.current) spotiLinkRef.current.href = json.item.external_urls.spotify; // Update the resource link
       }
@@ -77,6 +85,23 @@ export default function App() {
       })()
     }
   }, [backgroundImageFirstTab])
+  function getSpotiToken() {
+    updateState(prevState => { return { ...prevState, token: null } }); // Make the previous token null, so that, until there's a new token, requests won't be sent.
+    const win = window.open(`https://accounts.spotify.com/authorize?response_type=token&client_id=${encodeURIComponent("282dc0486ba74b6d8a9acde0fee407f4")}&scope=${encodeURIComponent("user-modify-playback-state user-read-playback-state")}&redirect_uri=${window.location.href.substring(0, window.location.href.lastIndexOf("/"))}/oauth.html`, "_blank", "width=500,height=350");
+    if (!win || win?.closed) {
+      let div = document.createElement("div");
+      createRoot(div).render(<Dialog>
+        <h3>User interaction is required</h3>
+        <label>Spotify token is expired. Please click on the button below to get it again.</label><br></br>
+        <button onClick={() => {
+          getSpotiToken();
+          (div.querySelector(".dialog") as HTMLDivElement).style.opacity = "0";
+          setTimeout(() => div.remove(), 210)
+        }}>Get token</button>
+      </Dialog>);
+      (document.querySelector("[data-canvasexport]")?.parentElement ?? document.body).append(div);
+    }
+  }
   return <>
     <Header></Header>
     <i>A simple music controls UI, with a style similar to the iOS lock screen music controls</i><br></br><br></br>
@@ -84,9 +109,7 @@ export default function App() {
     {!state.next ? <>
       <div className="introductionAdapt">
         <span style={{ float: "left" }}>
-          <button style={{ marginRight: "10px" }} onClick={() => {
-            window.open(`https://accounts.spotify.com/authorize?response_type=token&client_id=${encodeURIComponent("282dc0486ba74b6d8a9acde0fee407f4")}&scope=${encodeURIComponent("user-modify-playback-state user-read-playback-state")}&redirect_uri=${window.location.href.substring(0, window.location.href.lastIndexOf("/"))}/oauth.html`, "_blank", "width=500,height=350");
-          }}>Connect to Spotify</button>
+          <button style={{ marginRight: "10px" }} onClick={getSpotiToken}>Connect to Spotify</button>
           <button style={{ backgroundColor: "var(--card)" }} onClick={() => updateState(prevState => { return { ...prevState, next: true, sendDataProvided: true } })}>Manually add metadata</button><br></br><br></br>
           <i style={{ textDecoration: "underline", fontSize: "0.7em" }} onClick={() => {
             let div = document.createElement("div");
@@ -124,6 +147,10 @@ export default function App() {
                   },
                   body: body
                 });
+                if (req.status === 401) {
+                  getSpotiToken(); // Get a new token
+                  throw new Error("Failed Spotify request")
+                }
                 if (!link.endsWith("devices") && req.status !== 204) throw new Error("Failed Spotify request"); // The devices endpoint is the only one which returns content inside the request
                 return req;
               }
