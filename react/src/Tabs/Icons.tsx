@@ -33,7 +33,7 @@ export default function Icons() {
                         break;
                     }
                 }
-            }}><option value={-1}>None</option><option value={0}>Defualt</option><option value={1}>Custom icon</option></select>
+            }}><option value={-1}>None</option><option value={0}>Default</option><option value={1}>Custom icon</option></select>
         </Card><br></br>
         <Checkbox callback={(checked) => {
             localStorage.setItem("Playerify-SVGIconBackground", checked ? "a" : "b");
