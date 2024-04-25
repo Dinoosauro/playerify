@@ -33,6 +33,9 @@ export default function Render({ updateState }: Props) {
         <label style={{ marginRight: "10px" }}>Font family:</label><input type="text" onChange={(e) => {
             updateProperty("font", e.target.value);
         }} defaultValue={defaultValues.font ?? `"SF Pro", sans-serif`}></input><br></br><br></br>
+        <label style={{ marginRight: "10px" }}>Background image filter:</label><input type="text" onChange={(e) => {
+            updateProperty("backgroundFilter", e.target.value);
+        }} defaultValue={defaultValues.backgroundFilter ?? `blur(16px) brightness(50%)`}></input><br></br><br></br>
         <label style={{ marginRight: "10px" }}>Text color:</label><input type="color" defaultValue={defaultValues.color ?? "#fafafa"} onChange={(e) => {
             updateProperty("color", e.target.value);
         }}></input><br></br><br></br>

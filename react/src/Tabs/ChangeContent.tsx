@@ -23,6 +23,7 @@ const selectMap = new Map<keyof RenderState, MapVal>([
     ["maxPlayback", { str: "Song end (in ms)", val: "number" }],
     ["background", { str: "Background image", val: "file", persist: true }]
 ])
+let isUnsplashLoading = false;
 /**
  * The tab that permits to edit metadata values
  * @returns the ChangeContent ReactNode
@@ -64,7 +65,9 @@ export default function ChangeContent() {
                         input.click();
                     }
                 }}>Upload image</button>
-                {state === "background" && <button onClick={async () => { // Get random image from Unsplash
+                <button onClick={async () => { // Get random image from Unsplash
+                    if (isUnsplashLoading) return;
+                    isUnsplashLoading = true;
                     let div = document.createElement("div");
                     const req = await fetch(APIValues.unsplash.serverLink); // Get a random image using Serverless function
                     if (req.status === 200) {
@@ -76,19 +79,19 @@ export default function ChangeContent() {
                         createRoot(div).render(<Dialog close={closeDiv}>
                             <h2>Random Unsplash image:</h2>
                             <div className="flex wcenter">
-
                                 <img onClick={() => {
-                                    localStorage.setItem("Playerify-BackgroundLinks", JSON.stringify({ ...JSON.parse(localStorage.getItem("Playerify-BackgroundLinks") ?? "{}"), [state]: json.url }));
+                                    if (mapVal.persist) localStorage.setItem("Playerify-BackgroundLinks", JSON.stringify({ ...JSON.parse(localStorage.getItem("Playerify-BackgroundLinks") ?? "{}"), [state]: json.url }));
                                     window.updateRenderState(prevState => { return { ...prevState, [state]: json.url } });
                                     closeDiv();
                                 }} src={json.url} style={{ maxWidth: "100%", maxHeight: "40vh", borderRadius: "8px" }}></img>
                             </div><br></br><br></br>
-                            <i>{json.description} — <a href={`https://unsplash.com/it/foto/${json.imgId}`}>{json.imgId}</a></i><br></br>
-                            <label>Image of <a href={`https://unsplash.com/@${json.user}`}>{json.user}</a> on Unsplash. Click on the image to apply it.</label><br></br>
+                            <i>{json.description} — <a href={`https://unsplash.com/it/foto/${json.imgId}?utm_source=Playerify&utm_medium=referral`}>{json.imgId}</a></i><br></br>
+                            <label>Image of <a href={`https://unsplash.com/@${json.user}?utm_source=Playerify&utm_medium=referral`}>{json.user}</a> on <a href="https://unsplash.com/?utm_source=Playerify&utm_medium=referral">Unsplash.</a> Click on the image to apply it.</label><br></br>
                         </Dialog>)
                         document.body.append(div);
+                        isUnsplashLoading = false;
                     }
-                }}>Get random Unsplash photo</button>}
+                }}>Get random Unsplash photo</button>
             </>}
         </Card>
     </>

@@ -29,7 +29,8 @@ export interface RenderState {
     devicePlaybackType: string,
     forceReRender: number,
     dataProvided: boolean,
-    tokenUpdate: number
+    tokenUpdate: number,
+    backgroundFilter: string
 }
 export interface AppState {
     token: null | string,

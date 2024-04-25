@@ -119,7 +119,8 @@ export default function ImageRenderer({ refresh, event }: Props) {
         devicePlaybackType: "unknown",
         forceReRender: Date.now(),
         dataProvided: false,
-        tokenUpdate: 0
+        tokenUpdate: 0,
+        backgroundFilter: "blur(16px) brightness(50%)"
     });
     playbackTime = state.currentPlayback;
     maxPlayback = state.maxPlayback;
@@ -327,10 +328,10 @@ export default function ImageRenderer({ refresh, event }: Props) {
             const scale = imgRatio > canvasRatio ? ctx.canvas.height / img.height : ctx.canvas.width / img.width;
             // Get also the starting position for the canvas
             let [x, y] = imgRatio > canvasRatio ? [(ctx.canvas.width - (img.width * scale)) / 2, 0] : [0, (ctx.canvas.height - (img.height * scale)) / 2]
-            ctx.drawImage(await proxyCanvas({ filter: "blur(16px) brightness(50%)", image: state.background, drawProps: [x, y, img.width * scale, img.height * scale] }), 0, 0, widthHeight[0], widthHeight[1]);
+            ctx.drawImage(await proxyCanvas({ filter: state.backgroundFilter, image: state.background, drawProps: [x, y, img.width * scale, img.height * scale] }), 0, 0, widthHeight[0], widthHeight[1]);
             canvasDrawing.splice(canvasDrawing.indexOf(ctx), 1);
         }
-    }, [state.background, state.width, state.height, state.forceReRender, state.dataProvided])
+    }, [state.background, state.width, state.height, state.forceReRender, state.dataProvided, state.backgroundFilter])
     /**
      * Draw the button icons to their dedicated canvas
      */
