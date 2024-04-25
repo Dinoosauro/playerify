@@ -148,7 +148,10 @@ export default function ImageRenderer({ refresh, event }: Props) {
      */
     function writeUpdateElements(dontUpdate?: boolean) {
         const textCtx = textCanvas.current?.getContext("2d");
-        if (isPlaying && !dontUpdate) playbackTime += 1000; // One second has passed
+        if (isPlaying && !dontUpdate) {// One second has passed
+            playbackTime += 1000;
+            updateState(prevState => { return { ...prevState, currentPlayback: playbackTime } }) // Update the state so that, if the user edits a property from the Settings, the playback won't start again at the last position. This is due the fact that, when the state is re-rendered, the "playbackTime" value is updated with its State value
+        }
         if (heightProgress === -9999) return; // No calculated height from the Album Art canvas has been provided. Don't do anything.
         if (dataProvided && textCtx && canvasDrawing.indexOf(textCtx) === -1) { // If data has been provided, and there aren't any current actions being done on this canvas, start drawing on it
             textCtx.clearRect(0, 0, widthHeight[0], widthHeight[1]);
