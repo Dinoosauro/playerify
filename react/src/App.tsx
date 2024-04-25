@@ -14,6 +14,7 @@ import example from "./assets/example.jpg";
 import IndexedDatabase from "./Scripts/IndexedDatabase";
 import OpenSource from "./Components/OpenSource";
 import GetFullSize from "./Scripts/GetFullSize";
+import APIValues from "./Scripts/APIValues";
 
 let lastRequestDate = 0;
 export default function App() {
@@ -86,7 +87,7 @@ export default function App() {
   }, [backgroundImageFirstTab])
   function getSpotiToken() {
     updateState(prevState => { return { ...prevState, token: null } }); // Make the previous token null, so that, until there's a new token, requests won't be sent.
-    const win = window.open(`https://accounts.spotify.com/authorize?response_type=token&client_id=${encodeURIComponent("282dc0486ba74b6d8a9acde0fee407f4")}&scope=${encodeURIComponent("user-modify-playback-state user-read-playback-state")}&redirect_uri=${window.location.href.substring(0, window.location.href.lastIndexOf("/"))}/oauth.html`, "_blank", "width=500,height=350");
+    const win = window.open(`https://accounts.spotify.com/authorize?response_type=token&client_id=${encodeURIComponent(APIValues.spotify.clientId)}&scope=${encodeURIComponent(APIValues.spotify.scope)}&redirect_uri=${window.location.href.substring(0, window.location.href.lastIndexOf("/"))}/oauth.html`, "_blank", "width=500,height=350");
     if (!win || win?.closed) {
       let div = document.createElement("div");
       createRoot(div).render(<Dialog>

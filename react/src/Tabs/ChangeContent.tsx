@@ -3,6 +3,9 @@ import { RenderState } from "../Interface/Interfaces"
 import Card from "../Components/Card";
 import updateProperty from "../Scripts/UpdateProperty";
 import DatabaseInput from "../Scripts/DatabaseInput";
+import { createRoot } from "react-dom/client";
+import Dialog from "../Components/Dialog";
+import APIValues from "../Scripts/APIValues";
 interface MapVal {
     str: string,
     val: "string" | "number" | "file",
@@ -40,7 +43,7 @@ export default function ChangeContent() {
                     if (mapVal.persist) localStorage.setItem("Playerify-BackgroundLinks", JSON.stringify({ ...JSON.parse(localStorage.getItem("Playerify-BackgroundLinks") ?? "{}"), [state]: e.target.value }));
                     window.updateRenderState(prevState => { return { ...prevState, [state]: e.target.value } });
                 }}></input><br></br><br></br>
-                <button onClick={() => {
+                <button style={{ marginRight: "10px" }} onClick={() => {
                     if (mapVal.persist) { // Save the values in the LocalStorage
                         // Delete the previous image link, since otherwise this link would be applied (links have priority over database blobs)
                         let links = JSON.parse(localStorage.getItem("Playerify-BackgroundLinks") ?? "{}");
@@ -61,6 +64,31 @@ export default function ChangeContent() {
                         input.click();
                     }
                 }}>Upload image</button>
+                {state === "background" && <button onClick={async () => { // Get random image from Unsplash
+                    let div = document.createElement("div");
+                    const req = await fetch(APIValues.unsplash.serverLink); // Get a random image using Serverless function
+                    if (req.status === 200) {
+                        const json = await req.json();
+                        function closeDiv() {
+                            (div.querySelector(".dialog") as HTMLDivElement).style.opacity = "0";
+                            setTimeout(() => div.remove(), 210);
+                        }
+                        createRoot(div).render(<Dialog close={closeDiv}>
+                            <h2>Random Unsplash image:</h2>
+                            <div className="flex wcenter">
+
+                                <img onClick={() => {
+                                    localStorage.setItem("Playerify-BackgroundLinks", JSON.stringify({ ...JSON.parse(localStorage.getItem("Playerify-BackgroundLinks") ?? "{}"), [state]: json.url }));
+                                    window.updateRenderState(prevState => { return { ...prevState, [state]: json.url } });
+                                    closeDiv();
+                                }} src={json.url} style={{ maxWidth: "100%", maxHeight: "40vh", borderRadius: "8px" }}></img>
+                            </div><br></br><br></br>
+                            <i>{json.description} — <a href={`https://unsplash.com/it/foto/${json.imgId}`}>{json.imgId}</a></i><br></br>
+                            <label>Image of <a href={`https://unsplash.com/@${json.user}`}>{json.user}</a> on Unsplash. Click on the image to apply it.</label><br></br>
+                        </Dialog>)
+                        document.body.append(div);
+                    }
+                }}>Get random Unsplash photo</button>}
             </>}
         </Card>
     </>

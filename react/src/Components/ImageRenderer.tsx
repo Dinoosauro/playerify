@@ -313,15 +313,23 @@ export default function ImageRenderer({ refresh, event }: Props) {
         return canvas;
     }
     useEffect(() => { // Draw the background image
-        (async () => {
-            if (!state.dataProvided) return;
-            const ctx = backgroundCanvas.current?.getContext("2d");
-            if (!ctx || canvasDrawing.indexOf(ctx) !== -1) return;
-            canvasDrawing.push(ctx);
-            ctx.clearRect(0, 0, widthHeight[0], widthHeight[1]);
-            ctx.drawImage(await proxyCanvas({ filter: "blur(16px) brightness(50%)", image: state.background, drawProps: [0, 0, widthHeight[0], widthHeight[1]] }), 0, 0, widthHeight[0], widthHeight[1]);
+        if (!state.dataProvided) return;
+        const ctx = backgroundCanvas.current?.getContext("2d");
+        if (!ctx || canvasDrawing.indexOf(ctx) !== -1) return;
+        canvasDrawing.push(ctx);
+        ctx.clearRect(0, 0, widthHeight[0], widthHeight[1]);
+        // Get the background image width/height by creating a new Image element. In this way, the painted image will be centered
+        const img = new Image();
+        img.src = state.background;
+        img.onload = async () => {
+            const [canvasRatio, imgRatio] = [ctx.canvas.width / ctx.canvas.height, img.width / img.height]; // Get the two canvas ratio
+            // Get the scale for the final width/hegith of the canvas paint
+            const scale = imgRatio > canvasRatio ? ctx.canvas.height / img.height : ctx.canvas.width / img.width;
+            // Get also the starting position for the canvas
+            let [x, y] = imgRatio > canvasRatio ? [(ctx.canvas.width - (img.width * scale)) / 2, 0] : [0, (ctx.canvas.height - (img.height * scale)) / 2]
+            ctx.drawImage(await proxyCanvas({ filter: "blur(16px) brightness(50%)", image: state.background, drawProps: [x, y, img.width * scale, img.height * scale] }), 0, 0, widthHeight[0], widthHeight[1]);
             canvasDrawing.splice(canvasDrawing.indexOf(ctx), 1);
-        })()
+        }
     }, [state.background, state.width, state.height, state.forceReRender, state.dataProvided])
     /**
      * Draw the button icons to their dedicated canvas
