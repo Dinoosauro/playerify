@@ -458,7 +458,6 @@ export default function ImageRenderer({ refresh, event }: Props) {
             await writeUpdateElements(true); // Update the icon position, without adding the second
             canvasDrawing.current.splice(canvasDrawing.current.indexOf(ctx), 1);
             drawIcons();
-            console.log(state.progressBarColor);
         })()
     }, [state.album, state.author, state.color, state.font, state.height, state.img, state.imgRadius, state.metadataColor, state.width, state.title, state.forceReRender, state.dataProvided, state.metadataColorFilter, state.metadataColorOption, state.metadataColorForceRefresh, state.progressBarColor, state.useProgressBarColor]);
     useEffect(() => { drawIcons() }, [state.automobile, state.color, state.computer, state.devicePlaybackType, state.game_console, state.height, state.iconSize, state.isPlaying, state.next, state.pause, state.play, state.playbackDevice, state.prev, state.smartphone, state.speaker, state.tablet, state.tv, state.width, state.forceReRender, state.dataProvided])
