@@ -14,18 +14,16 @@ export default function MetadataBubble() {
     let [checked, updateChecked] = useState<boolean>(defaultValues.useProgressBarColor);
     return <>
         <h3>Change how the track metadata bubble is shown:</h3>
-        <Card type={1}>
-            <select defaultValue={state} onChange={(e) => {
-                updateProperty("metadataColorOption", +e.target.value);
-                updateState(+e.target.value);
-            }}>
-                <option value={0}>Use a static color</option>
-                <option value={1}>Get a part of the album art</option>
-                <option value={2}>Get a random color from the album art</option>
-                <option value={3}>Get a part of the background image</option>
-                <option value={4}>Get a random color from the background image</option>
-            </select>
-        </Card><br></br>
+        <select className="fullWidth" defaultValue={state} onChange={(e) => {
+            updateProperty("metadataColorOption", +e.target.value);
+            updateState(+e.target.value);
+        }}>
+            <option value={0}>Use a static color</option>
+            <option value={1}>Get a part of the album art</option>
+            <option value={2}>Get a random color from the album art</option>
+            <option value={3}>Get a part of the background image</option>
+            <option value={4}>Get a random color from the background image</option>
+        </select><br></br><br></br>
         <Card type={1}>
             {state === 0 ? <><label style={{ marginRight: "10px" }}>Metadata bubble color:</label><input type="color" key={`Playerify-MetadataBubble-ChooseColor`} defaultValue={defaultValues.metadataColor ?? "#ffffff"} onChange={(e) => {
                 updateProperty("metadataColor", e.target.value);

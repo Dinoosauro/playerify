@@ -14,7 +14,9 @@ interface Props {
  */
 export default function Checkbox({ children, callback, checked }: Props) {
     return <div style={{ position: "relative" }} className="flex hcenter">
-        <input defaultChecked={checked} type="checkbox" onChange={(e) => callback && callback(e.target.checked)}></input>
+        <div style={{ position: "relative" }}>
+            <input defaultChecked={checked} type="checkbox" onChange={(e) => callback && callback(e.target.checked)}></input>
+        </div>
         {children}
     </div>
 }
