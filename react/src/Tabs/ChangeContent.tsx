@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { RenderState } from "../Interface/Interfaces"
 import Card from "../Components/Card";
 import updateProperty from "../Scripts/UpdateProperty";
@@ -6,31 +6,32 @@ import DatabaseInput from "../Scripts/DatabaseInput";
 import { createRoot } from "react-dom/client";
 import Dialog from "../Components/Dialog";
 import APIValues from "../Scripts/APIValues";
+import Checkbox from "../Components/Checkbox";
 interface MapVal {
     str: string,
     val: "string" | "number" | "file",
     persist?: boolean
 }
 /**
- * The map that contains the metadata whose value can be edited
- */
-const selectMap = new Map<keyof RenderState, MapVal>([
-    ["album", { str: "Album name", val: "string" }],
-    ["author", { str: "Song author", val: "string" }],
-    ["currentPlayback", { str: "Playback position (in ms)", val: "number" }],
-    ["img", { str: "Album art", val: "file" }],
-    ["title", { str: "Song title", val: "string" }],
-    ["maxPlayback", { str: "Song end (in ms)", val: "number" }],
-    ["background", { str: "Background image", val: "file", persist: true }]
-])
-let isUnsplashLoading = false;
-/**
  * The tab that permits to edit metadata values
  * @returns the ChangeContent ReactNode
- */
+*/
 export default function ChangeContent() {
+    /**
+     * The map that contains the metadata whose value can be edited
+     */
+    const selectMap = new Map<keyof RenderState, MapVal>([
+        ["album", { str: "Album name", val: "string" }],
+        ["author", { str: "Song author", val: "string" }],
+        ["currentPlayback", { str: "Playback position (in ms)", val: "number" }],
+        ["img", { str: "Album art", val: "file" }],
+        ["title", { str: "Song title", val: "string" }],
+        ["maxPlayback", { str: "Song end (in ms)", val: "number" }],
+        ["background", { str: "Background image", val: "file", persist: true }]
+    ])
     let [state, updateState] = useState<keyof RenderState>("album");
     const mapVal = selectMap.get(state);
+    let isUnsplashLoading = useRef<boolean>(false);
     return <>
         <h3>Change the content displayed in the canvas:</h3><br></br>
         <select className="fullWidth" defaultValue={state} onChange={(e) => {
@@ -66,8 +67,8 @@ export default function ChangeContent() {
                     }
                 }}>Upload image</button>
                 <button onClick={async () => { // Get random image from Unsplash
-                    if (isUnsplashLoading) return;
-                    isUnsplashLoading = true;
+                    if (isUnsplashLoading.current) return;
+                    isUnsplashLoading.current = true;
                     let div = document.createElement("div");
                     const req = await fetch(APIValues.unsplash.serverLink); // Get a random image using Serverless function
                     if (req.status === 200) {
@@ -89,10 +90,14 @@ export default function ChangeContent() {
                             <label>Image of <a href={`https://unsplash.com/@${json.user}?utm_source=Playerify&utm_medium=referral`}>{json.user}</a> on <a href="https://unsplash.com/?utm_source=Playerify&utm_medium=referral">Unsplash.</a> Click on the image to apply it.</label><br></br>
                         </Dialog>)
                         document.body.append(div);
-                        isUnsplashLoading = false;
+                        isUnsplashLoading.current = false;
                     }
                 }}>Get random Unsplash photo</button>
             </>}
-        </Card>
+        </Card><br></br><br></br>
+        <Checkbox checked={(JSON.parse(localStorage.getItem("Playerify-CanvasPreference") ?? "{}")).albumArtAsBackground === "a"} callback={(checked) => {
+            updateProperty("albumArtAsBackground", checked ? "a" : "b")
+            window.updateRenderState(prevState => { return { ...prevState, albumArtAsBackground: checked } })
+        }}>Use the album art as background</Checkbox>
     </>
 }

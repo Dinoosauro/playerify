@@ -12,7 +12,7 @@ interface Props {
  * A Section component is a component that permits horizontal scrolling between tabs
  * @param list an object array that contains a `displayedName` property, for the name that'll be displayed in the DOM, and an ID, used for the callback
  * @param callback the function that'll be called when the selection changes
- * @returns 
+ * @returns A Section component ReactNode
  */
 export default function Sections({ list, callback }: Props) {
     let mainContainer = useRef<HTMLDivElement>(null)

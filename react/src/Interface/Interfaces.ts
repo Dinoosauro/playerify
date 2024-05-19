@@ -30,7 +30,14 @@ export interface RenderState {
     forceReRender: number,
     dataProvided: boolean,
     tokenUpdate: number,
-    backgroundFilter: string
+    backgroundFilter: string,
+    albumArtAsBackground: boolean,
+    metadataColorOption: number,
+    metadataColorFilter: string,
+    metadataColorForceRefresh: number,
+    progressBarColor?: HTMLCanvasElement,
+    useProgressBarColor: boolean,
+    remainingColor: string
 }
 export interface AppState {
     token: null | string,

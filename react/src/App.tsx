@@ -16,7 +16,6 @@ import OpenSource from "./Components/OpenSource";
 import GetFullSize from "./Scripts/GetFullSize";
 import APIValues from "./Scripts/APIValues";
 
-let lastRequestDate = 0;
 export default function App() {
   let [state, updateState] = useState<AppState>({
     token: null,
@@ -33,6 +32,7 @@ export default function App() {
    * The background image, that is used in the landing page. This background image is the same as the applied image.
    */
   let backgroundImageFirstTab = useRef<HTMLImageElement>(null);
+  let lastRequestDate = useRef<number>(0);
   useEffect(() => {
     window.addEventListener("message", (msg) => { // Prepare getting the token
       if (msg.origin !== window.location.origin) return;
@@ -57,8 +57,8 @@ export default function App() {
   }, [state.sendDataProvided])
   useEffect(() => { // Make a request to Spotify API for the currently-playing track
     (async () => {
-      if (state.token !== "" && state.token !== null && (Date.now() - lastRequestDate) > 4500) { // Wait at least 4500 ms from each request
-        lastRequestDate = Date.now()
+      if (state.token !== "" && state.token !== null && (Date.now() - lastRequestDate.current) > 4500) { // Wait at least 4500 ms from each request
+        lastRequestDate.current = Date.now()
         const request = await fetch(`https://api.spotify.com/v1/me/player?additional_types=track,episode`, {
           headers: {
             Authorization: `Bearer ${state.token}`
@@ -156,9 +156,9 @@ export default function App() {
               }
               if (type !== "device") { // Simple request
                 navigator.vibrate && navigator.vibrate(300);
-                lastRequestDate -= 5000; // By reducing the requested date by 5000, the effect will always get the currently-playing track. In this way, if the user quickly skips more tracks, each track will be fetched.
+                lastRequestDate.current -= 5000; // By reducing the requested date by 5000, the effect will always get the currently-playing track. In this way, if the user quickly skips more tracks, each track will be fetched.
                 await spotifyRequest(`https://api.spotify.com/v1/me/player/${type === "prev" ? "previous" : type}`, type === "pause" || type === "play" || type.startsWith("seek") ? "PUT" : "POST");
-                updateState(prevState => { return { ...prevState, refreshPlayback: Date.now() } });
+                setTimeout(() => updateState(prevState => { return { ...prevState, refreshPlayback: Date.now() } }), 300);
               } else { // Make a request to Spotify API for the currently available devices
                 const req = await spotifyRequest(`https://api.spotify.com/v1/me/player/devices`, "GET");
                 if (req.status === 200) {
@@ -186,7 +186,7 @@ export default function App() {
                             device_ids: [item.id]
                           }));
                           await closeDialog();
-                          updateState(prevState => { return { ...prevState, refreshPlayback: Date.now() } });
+                          setTimeout(() => updateState(prevState => { return { ...prevState, refreshPlayback: Date.now() } }), 300);
                         }}><Card type={1}>
                             <div className="flex hcenter pointer">
                               <img src={availableCustomIcons.indexOf(item.type.toLowerCase()) !== -1 ? `${item.type.toLowerCase()}.svg` : `./playbackDevice.svg`} width={24}></img>

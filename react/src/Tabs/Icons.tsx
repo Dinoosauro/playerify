@@ -1,7 +1,6 @@
 import { useState } from "react";
 import Checkbox from "../Components/Checkbox";
 import DatabaseInput from "../Scripts/DatabaseInput";
-import IndexedDatabase from "../Scripts/IndexedDatabase";
 import Card from "../Components/Card";
 
 /**
@@ -35,7 +34,7 @@ export default function Icons() {
                 }
             }}><option value={-1}>None</option><option value={0}>Default</option><option value={1}>Custom icon</option></select>
         </Card><br></br>
-        <Checkbox callback={(checked) => {
+        <Checkbox checked={localStorage.getItem("Playerify-SVGIconBackground") !== "b"} callback={(checked) => {
             localStorage.setItem("Playerify-SVGIconBackground", checked ? "a" : "b");
             window.updateRenderState(prevState => { return { ...prevState, date: Date.now() } })
         }}>Apply the text color to SVG images</Checkbox>

@@ -1,8 +1,6 @@
-import { createRoot } from "react-dom/client";
 import Dialog from "../Components/Dialog";
 import { AppState } from "../Interface/Interfaces";
 import updateProperty from "../Scripts/UpdateProperty";
-import DatabaseInput from "../Scripts/DatabaseInput";
 import { useEffect, useRef, useState } from "react";
 import ExportCanvas from "../Scripts/ExportCanvas";
 
@@ -38,9 +36,6 @@ export default function Render({ updateState }: Props) {
         }} defaultValue={defaultValues.backgroundFilter ?? `blur(16px) brightness(50%)`}></input><br></br><br></br>
         <label style={{ marginRight: "10px" }}>Text color:</label><input type="color" defaultValue={defaultValues.color ?? "#fafafa"} onChange={(e) => {
             updateProperty("color", e.target.value);
-        }}></input><br></br><br></br>
-        <label style={{ marginRight: "10px" }}>Metadata bubble color:</label><input type="color" defaultValue={defaultValues.metadataColor ?? "#ffffff"} onChange={(e) => {
-            updateProperty("metadataColor", e.target.value);
         }}></input><br></br><br></br>
         <button onClick={() => updateState(prevState => { return { ...prevState, refreshPlayback: Date.now(), forceReRender: true } })}>Re-render image</button>
         <button onClick={() => showDialog(true)}>Image download instructions</button>
