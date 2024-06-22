@@ -37,7 +37,8 @@ export interface RenderState {
     metadataColorForceRefresh: number,
     progressBarColor?: HTMLCanvasElement,
     useProgressBarColor: boolean,
-    remainingColor: string
+    remainingColor: string,
+    useCrossoriginAnonymous: boolean
 }
 export interface AppState {
     token: null | string,

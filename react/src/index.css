@@ -191,6 +191,14 @@ a {
   float: right;
 }
 
+.exportRight {
+  display: flex;
+}
+
+.exportRight>span {
+  margin-left: 10px;
+}
+
 @media (max-width: 700px) {
   .mainComponentDiv {
     display: block !important;
@@ -207,5 +215,16 @@ a {
 
   .introductionAdapt>span>img {
     max-width: 100%;
+  }
+}
+
+@media (max-width: 500px) {
+  .exportRight {
+    display: block;
+  }
+
+  .exportRight>span {
+    margin-top: 10px;
+    margin-left: 0px;
   }
 }

@@ -27,7 +27,8 @@ interface RoundedRectProps {
 declare global {
     interface Window {
         updateRenderState: React.Dispatch<React.SetStateAction<RenderState>>,
-        updateHeaderState: React.Dispatch<React.SetStateAction<number>>
+        updateHeaderState: React.Dispatch<React.SetStateAction<number>>,
+        currentTrack: string
     }
 }
 interface Props {
@@ -75,7 +76,8 @@ export default function ImageRenderer({ refresh, event }: Props) {
         metadataColorFilter: defaultValues.metadataColorFilter ?? "blur(36px) brightness(35%) contrast(110%)",
         metadataColorForceRefresh: 0,
         useProgressBarColor: defaultValues.useProgressBarColor ?? false,
-        remainingColor: defaultValues.remainingColor ?? "#000000"
+        remainingColor: defaultValues.remainingColor ?? "#000000",
+        useCrossoriginAnonymous: true // Note: this will trigger a complete re-render of the canvas. Every canvas will be re-created from scratch, since it must not be tainted if crossorigin=anonymous is enabled
     });
     /**
      * The reference of the State, so that it can be accessed also from intervals
@@ -127,6 +129,7 @@ export default function ImageRenderer({ refresh, event }: Props) {
     }
     let interval = useRef<number | undefined>(undefined);
     useLayoutEffect(() => { dataRef.current = state }, [state]); // Apply the value to the new State before firing all the other useEffect events
+    useEffect(() => { window.currentTrack = `${state.title} – ${state.author}` }, [state.title, state.author]); // Update the `currentTrack` property used for canvas exportation
     useEffect(() => { // Add a Window element to go back to previous width/height when the user exits from Fullscreen mode
         window.addEventListener("fullscreenchange", () => {
             if (!document.fullscreenElement) {
@@ -139,7 +142,7 @@ export default function ImageRenderer({ refresh, event }: Props) {
                 }
             }
         })
-    }, [])
+    }, []);
     /**
      * The function that handles the update of time-sensitive text elements
      * @param dontUpdate don't add 1 second to the current time
@@ -212,7 +215,7 @@ export default function ImageRenderer({ refresh, event }: Props) {
             for (let key in imageLinks) updateObj[key] = imageLinks[key]; // Apply also the URLs of the provided values
             updateState(prevState => { return { ...prevState, ...updateObj } });
         })();
-    }, []);
+    }, [state.useCrossoriginAnonymous]);
     useEffect(() => { // Run this every time a token is updated
         interval.current && clearInterval(interval.current)
         interval.current = setInterval(() => { writeUpdateElements() }, 1000); // Update the time-sensitive values every second
@@ -276,6 +279,7 @@ export default function ImageRenderer({ refresh, event }: Props) {
                 for (let i = 1; i < split.length; i++) split[i] = `${state.color}${split[i].substring(split[i].indexOf(`"`))}`;
                 image = URL.createObjectURL(new Blob([split.join(`fill="`)], { type: "image/svg+xml" }));
             }
+            dataRef.current.useCrossoriginAnonymous && (img.crossOrigin = "anonymous");
             img.src = image;
         })
     }
@@ -285,7 +289,7 @@ export default function ImageRenderer({ refresh, event }: Props) {
             colorImg instanceof HTMLCanvasElement && updateState(prevState => { return { ...prevState, progressBarColor: colorImg } })
         })()
 
-    }, [state.img, state.metadataColorForceRefresh])
+    }, [state.img, state.metadataColorForceRefresh, state.useCrossoriginAnonymous])
     /**
      * Write a text to the Canvas, by cropping it if necessary
      * @param ctx the context used for writing text
@@ -340,6 +344,7 @@ export default function ImageRenderer({ refresh, event }: Props) {
         return new Promise<HTMLImageElement | undefined | HTMLCanvasElement>((resolve) => {
             if (metadataColor === 0) resolve(undefined); // A static color must be used, so there's no necessity to create an image
             const img = new Image();
+            dataRef.current.useCrossoriginAnonymous && (img.crossOrigin = "anonymous");
             img.src = (metadataColor === 1 || metadataColor === 2) ? dataRef.current.img : dataRef.current.background; // With "1" or "2", the content must be extracted from the album art
             img.onload = () => {
                 (metadataColor === 1 || metadataColor === 3) && resolve(img); // With "1" or "3", the image will be taken without any cut, and it'll be later blurred. 
@@ -382,13 +387,14 @@ export default function ImageRenderer({ refresh, event }: Props) {
         ctx.clearRect(0, 0, dataRef.current.width, dataRef.current.height);
         // Get the background image width/height by creating a new Image element. In this way, the painted image will be centered
         const img = new Image();
+        state.useCrossoriginAnonymous && (img.crossOrigin = "anonymous");
         img.src = state.albumArtAsBackground ? state.img : state.background;
         img.onload = async () => {
             const { scale, x, y } = getRatio(ctx.canvas, img);
             ctx.drawImage(await proxyCanvas({ filter: state.backgroundFilter, image: state.albumArtAsBackground ? state.img : state.background, drawProps: [x, y, img.width * scale, img.height * scale] }), 0, 0, dataRef.current.width, dataRef.current.height);
             canvasDrawing.current.splice(canvasDrawing.current.indexOf(ctx), 1);
         }
-    }, [state.background, state.width, state.height, state.forceReRender, state.dataProvided, state.backgroundFilter, state.albumArtAsBackground, state.img])
+    }, [state.background, state.width, state.height, state.forceReRender, state.dataProvided, state.backgroundFilter, state.albumArtAsBackground, state.img, state.useCrossoriginAnonymous])
     /**
      * Draw the button icons to their dedicated canvas
      */
@@ -459,14 +465,14 @@ export default function ImageRenderer({ refresh, event }: Props) {
             canvasDrawing.current.splice(canvasDrawing.current.indexOf(ctx), 1);
             drawIcons();
         })()
-    }, [state.album, state.author, state.color, state.font, state.height, state.img, state.imgRadius, state.metadataColor, state.width, state.title, state.forceReRender, state.dataProvided, state.metadataColorFilter, state.metadataColorOption, state.metadataColorForceRefresh, state.progressBarColor, state.useProgressBarColor]);
-    useEffect(() => { drawIcons() }, [state.automobile, state.color, state.computer, state.devicePlaybackType, state.game_console, state.height, state.iconSize, state.isPlaying, state.next, state.pause, state.play, state.playbackDevice, state.prev, state.smartphone, state.speaker, state.tablet, state.tv, state.width, state.forceReRender, state.dataProvided])
+    }, [state.album, state.author, state.color, state.font, state.height, state.img, state.imgRadius, state.metadataColor, state.width, state.title, state.forceReRender, state.dataProvided, state.metadataColorFilter, state.metadataColorOption, state.metadataColorForceRefresh, state.progressBarColor, state.useProgressBarColor, state.useCrossoriginAnonymous]);
+    useEffect(() => { drawIcons() }, [state.automobile, state.color, state.computer, state.devicePlaybackType, state.game_console, state.height, state.iconSize, state.isPlaying, state.next, state.pause, state.play, state.playbackDevice, state.prev, state.smartphone, state.speaker, state.tablet, state.tv, state.width, state.forceReRender, state.dataProvided, state.useCrossoriginAnonymous])
     return <>
         <div ref={fullscreenDiv} style={{ position: "relative" }}>
-            <canvas data-canvasexport width={state.width} height={state.height} className="fixedCanvas" ref={backgroundCanvas}></canvas>
-            <canvas data-canvasexport className="fixedCanvas" style={{ position: "absolute", top: "0", left: "0", zIndex: "1" }} ref={canvas} width={state.width} height={state.height}></canvas>
-            <canvas data-canvasexport className="fixedCanvas" style={{ position: "absolute", top: "0", left: "0", zIndex: "2" }} ref={buttonCanvas} width={state.width} height={state.height}></canvas>
-            <canvas data-canvasexport className="fixedCanvas" onClick={async (e) => {
+            <canvas data-canvasexport width={state.width} height={state.height} key={`Playerify-MainCanvasShow-1-${state.useCrossoriginAnonymous}`} className="fixedCanvas" ref={backgroundCanvas}></canvas>
+            <canvas data-canvasexport className="fixedCanvas" key={`Playerify-MainCanvasShow-2-${state.useCrossoriginAnonymous}`} style={{ position: "absolute", top: "0", left: "0", zIndex: "1" }} ref={canvas} width={state.width} height={state.height}></canvas>
+            <canvas data-canvasexport className="fixedCanvas" key={`Playerify-MainCanvasShow-3-${state.useCrossoriginAnonymous}`} style={{ position: "absolute", top: "0", left: "0", zIndex: "2" }} ref={buttonCanvas} width={state.width} height={state.height}></canvas>
+            <canvas data-canvasexport className="fixedCanvas" key={`Playerify-MainCanvasShow-4-${state.useCrossoriginAnonymous}`} onClick={async (e) => {
                 const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
                 const coordinates = [(e.clientX - rect.left) * state.width / rect.width, (e.clientY - rect.top) * state.height / rect.height];
                 if (interactiveProgress.current.from[0] < coordinates[0] && (interactiveProgress.current.from[0] + interactiveProgress.current.length) > coordinates[0] && interactiveProgress.current.from[1] < coordinates[1] && (interactiveProgress.current.from[1] + interactiveProgress.current.size) > coordinates[1]) { // Clicked on the progress bar
